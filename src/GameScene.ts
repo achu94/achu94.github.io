@@ -1,106 +1,67 @@
 import Phaser from 'phaser';
+import { getRandomXY } from './utils';
 
 /**
- * FirstGameScene is an example Phaser Scene
  * @class
  * @constructor
  * @public
  */
-export class ThridGameScene extends Phaser.Scene {
+export class GameScene extends Phaser.Scene {
 
   private score!: number;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private stars!: Phaser.Physics.Arcade.Group;
-  private bombs!: Phaser.Physics.Arcade.Group;
   private scoreText!: Phaser.GameObjects.Text;
-  private fpsText!: Phaser.GameObjects.Text;
-
-
-
   private snake!: Phaser.Physics.Arcade.Image;
   private speed = 300;
   private apples!: Phaser.Physics.Arcade.Group;
-
   private snakeBody!: Phaser.Physics.Arcade.Group;
   private enemy!: Phaser.Physics.Arcade.Group;
 
   constructor() {
-    super('ThridGameScene');
-    console.log('FirstGameScene.constructor()');
+    super('GameScene');
   }
 
   preload() {
-    console.log('FirstGameScene.preload');
+    console.log('GameScene.preload');
     this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/platform.png');
     this.load.image('star', 'assets/star.png');
     this.load.image('bomb', 'assets/bomb.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+
+    this.load.spritesheet('bat', 'assets/32x32-bat-sprite.png', { frameWidth: 32, frameHeight: 32 });
+
     this.load.audio('mainSound', 'assets/mainLoop.wav');
   }
 
   create() {
     this.score = 0;
-    
     this.add.image(400, 300, 'sky');
     this.initScoreText();
-    
+
     const sound = this.sound.add('mainSound');
-    sound.play();
+    sound.play({loop: true});
 
-    this.fpsText = this.add.text(720, 10, '', { font: '16px Arial' });
     this.add.text(20, 580, 'Lider: GÜni Score: 1050', { font: '16px Arial' });
-    // // Spawn enemies every 2 seconds
-    this.time.addEvent({
-      delay: 2000,
-      loop: true,
-      callback: this.addEnemy,
-      callbackScope: this
-    });
-
-    this.time.addEvent({
-      delay: 10000,
-      loop: true,
-      callback: this.spawnStart,
-      callbackScope: this
-    });
-
-    this.bombs = this.physics.add.group();
-    this.physics.add.overlap(this.bombs, this.bombs, this.destroyBomb, undefined, this);
 
     // Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
-
-    // Set Apples
-    this.apples = this.physics.add.group();
 
     // Set Snakebody
     this.snakeBody = this.physics.add.group();
     this.enemy = this.physics.add.group();
     this.stars = this.physics.add.group();
+    this.apples = this.physics.add.group();
 
     // Set the PLAYER
     this.initPlayer();
     this.spawnApple();
 
-    this.physics.add.overlap(this.snake, this.apples, this.collectApple as any, undefined, this);
-
-    this.physics.add.overlap(this.snake, this.enemy, () => {
-      this.gameOverFunc();
-    }, undefined, this);
-
-    this.physics.add.overlap(this.snakeBody, this.enemy, (bodyPart) => {
-      this.gameOverFunc();
-    }, undefined, this);
-
-    this.physics.add.overlap(this.snake, this.stars, this.useStar, undefined, this);
-
-    // this.physics.add.overlap(this.player, this.stars, this.collectStar, undefined, this);
+    this.initTimeEvets();
+    this.initOverLaps();
   }
 
   update() {
-    this.fpsText.setText('FPS: ' + Math.round(this.game.loop.actualFps));
-
     this.playerMovement();
     this.updateSnakeBody();
   }
@@ -129,8 +90,7 @@ export class ThridGameScene extends Phaser.Scene {
   }
 
   spawnApple() {
-    const x = Phaser.Math.Between(0, 800);
-    const y = Phaser.Math.Between(0, 600);
+    const { x, y } = getRandomXY(0, 800, 0, 600);
 
     const apple = this.apples.create(x, y, 'bomb');
     apple.setTint(0xff0000);
@@ -147,9 +107,9 @@ export class ThridGameScene extends Phaser.Scene {
   }
 
   addBodyPart() {
-    
+
     const firstBodyElement: any = this.snakeBody.getChildren()[0];
-    
+
     const spawnX = this.snakeBody.getChildren().length > 0 ? firstBodyElement.x : this.snake.x;
     const spawnY = this.snakeBody.getChildren().length > 0 ? firstBodyElement.y : this.snake.y;
 
@@ -178,20 +138,35 @@ export class ThridGameScene extends Phaser.Scene {
     }
 
     if (this.snakeBody.getChildren().length) {
-      const firstElem: any = this.snakeBody.getChildren()[0];  
+      const firstElem: any = this.snakeBody.getChildren()[0];
 
       firstElem.x = this.snake.x;
       firstElem.y = this.snake.y;
     }
   }
 
-  addEnemy() {
+  addBat() {
+    const { x } = getRandomXY(20, 780);
 
-    const x = Phaser.Math.Between(20, 780);
-    const y = Phaser.Math.Between(20, 50);
-
-    const enemy1 = this.enemy.create(x, y, 'dude');
-    enemy1.setVelocityY(20);
+    const bat = this.enemy.create(x, -10, 'bat');
+    
+    const frameIndexesDown = this.anims.generateFrameNumbers('bat', {
+      start: 0, // Index of the first frame in the spritesheet
+      end: 3 // Index of the last frame in the spritesheet
+    });
+    
+    this.anims.create({
+      key: 'fly', // Unique key for the animation
+      frames: frameIndexesDown,
+      frameRate: 10, // Number of frames to display per second
+      repeat: -1 // -1 to loop the animation indefinitely
+    });
+    
+    bat.play('fly'); // Play the animation on the sprite
+    
+    
+    const batSpeed = Phaser.Math.Between(20, 100);
+    bat.setVelocityY(batSpeed);
   }
 
   gameOverFunc() {
@@ -202,9 +177,7 @@ export class ThridGameScene extends Phaser.Scene {
   }
 
   spawnStart() {
-    const x = Phaser.Math.Between(0, 800);
-    const y = Phaser.Math.Between(0, 600);
-
+    const { x, y } = getRandomXY(0, 780, 20, 580);
     this.stars.create(x, y, 'star');
   }
 
@@ -213,15 +186,20 @@ export class ThridGameScene extends Phaser.Scene {
       child.destroy();
       this.addScore(10);
     });
-    
+
     _star.destroy();
   }
 
   initScoreText() {
     //  The score
-    this.scoreText = this.add.text(16, 16, 'score: 0');
-    this.scoreText.style.fontSize = '32px';
-    this.scoreText.style.setFill('#000');
+    const scoreText: string = 'score: 0';
+    const scoreTextStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: "32px",
+      color: "#ffffff",
+    }
+
+    this.scoreText = this.add.text(32, 16, scoreText, scoreTextStyle);
+    this.scoreText.setZ(10);
   }
 
   addScore(amount: number) {
@@ -229,4 +207,35 @@ export class ThridGameScene extends Phaser.Scene {
     this.scoreText.setText('Score: ' + this.score);
   }
 
+  initTimeEvets() {
+    // Spawn enemies every 2 seconds
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: this.addBat,
+      callbackScope: this,
+    });
+
+    // Spawn stars every 10 seconds
+    this.time.addEvent({
+      delay: 10000,
+      loop: true,
+      callback: this.spawnStart,
+      callbackScope: this
+    });
+  }
+
+  initOverLaps() {
+    this.physics.add.overlap(this.snake, this.apples, this.collectApple as any, undefined, this);
+
+    this.physics.add.overlap(this.snake, this.enemy, () => {
+      this.gameOverFunc();
+    }, undefined, this);
+
+    this.physics.add.overlap(this.snakeBody, this.enemy, () => {
+      this.gameOverFunc();
+    }, undefined, this);
+
+    this.physics.add.overlap(this.snake, this.stars, this.useStar, undefined, this);
+  }
 }

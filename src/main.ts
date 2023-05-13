@@ -1,4 +1,4 @@
-import { ThridGameScene } from './thrid-scene';
+import { GameScene } from './GameScene';
 import Phaser from 'phaser';
 import './style.css';
 
@@ -14,7 +14,7 @@ const config: Phaser.Types.Core.GameConfig = {
         debug: false
       }
     },
-    scene: [ThridGameScene]
+    scene: [GameScene]
   };
 
 new Phaser.Game(config);
