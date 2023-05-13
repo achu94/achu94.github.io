@@ -40,7 +40,7 @@ export class GameScene extends Phaser.Scene {
     this.initScoreText();
 
     const sound = this.sound.add('mainSound');
-    sound.play({loop: true, volume: 0.1});
+    sound.play({loop: true, volume: 0.01});
 
     this.add.text(20, 580, 'Lider: GÜni Score: 1050', { font: '16px Arial' });
 
