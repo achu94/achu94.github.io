@@ -90,7 +90,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnApple() {
-    const { x, y } = getRandomXY(0, 800, 0, 600);
+    const { x, y } = getRandomXY(20, 80, 20, 580);
 
     const apple = this.apples.create(x, y, 'bomb');
     apple.setTint(0xff0000);
